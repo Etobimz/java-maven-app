@@ -1,4 +1,4 @@
 pushed image to private created docker hub repo
 pushed image to nexus repo 
 Created a pipeline that echos from diffrent stage in stages section of a jenkins file
-jenkins file syntaxes
+editing jenkins file syntaxes
