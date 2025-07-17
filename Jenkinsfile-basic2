@@ -1,0 +1,68 @@
+#!/usr/bin/env groovy
+
+def gv 
+
+pipeline {
+    agent any
+    tools { 
+        maven 'maven_3.9.10'
+
+    }
+
+    stages {
+
+
+        stage("Init") {
+            steps {
+                script {
+                    gv = load "script.groovy"
+                    
+                } 
+            }
+        }
+
+
+
+        stage('build jar') {
+            when { 
+                expression{
+                    BRANCH_NAME == 'jenkins-jobs'
+                }
+            }
+            steps {
+                script {
+                    echo "Executing pipeline for branch $BRANCH_NAME"
+                    gv.buildJar()
+                    
+                }
+            }
+        }
+
+
+
+        stage('build image') {
+            steps {
+                script {
+                    gv.buildImage()
+                }
+            
+            }
+        }
+
+
+        stage('deploy') {
+            when { 
+                expression{
+                    BRANCH_NAME == 'jenkins-jobs'
+                }
+            }
+            steps {
+                script { 
+                    echo "Executing pipeline for branch $BRANCH_NAME"
+                   gv.deployApp()
+                }
+            }
+        }
+    }
+}
+ 
