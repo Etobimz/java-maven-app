@@ -17,15 +17,21 @@ pipeline {
                 script {
                     gv = load "script.groovy"
                     
-                }
+                } 
             }
         }
 
 
 
         stage('build jar') {
+            when { 
+                expression{
+                    BRANCH_NAME == 'jenkins-jobs'
+                }
+            }
             steps {
                 script {
+                    echo "Executing pipeline for branch $BRANCH_NAME"
                     gv.buildJar()
                     
                 }
@@ -45,8 +51,14 @@ pipeline {
 
 
         stage('deploy') {
+            when { 
+                expression{
+                    BRANCH_NAME == 'jenkins-jobs'
+                }
+            }
             steps {
                 script { 
+                    echo "Executing pipeline for branch $BRANCH_NAME"
                    gv.deployApp()
                 }
             }
