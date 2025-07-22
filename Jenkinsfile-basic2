@@ -1,33 +1,26 @@
 #!/usr/bin/env groovy
 @Library('jenkins-shared-library') _
 
-
 def gv 
 
 pipeline {
     agent any
     tools { 
         maven 'maven_3.9.10'
-
     }
 
     stages {
-
-
         stage("Init") { 
             steps {
                 script {
-                    //gv = load "script.groovy"
-                    
+                    // gv = load "script.groovy"
                 } 
             }
         }
 
-
-
         stage('build jar') {
             when { 
-                expression{
+                expression {
                     BRANCH_NAME == 'jenkins-jobs'
                 }
             }
@@ -35,36 +28,30 @@ pipeline {
                 script {
                     echo "Executing pipeline for branch $BRANCH_NAME"
                     buildJar()
-                    
                 }
             }
         }
-
-
 
         stage('build image') {
             steps {
                 script {
                     buildImage()
                 }
-            
             }
         }
 
-
         stage('deploy') {
             when { 
-                expression{
+                expression {
                     BRANCH_NAME == 'jenkins-jobs'
                 }
             }
             steps {
                 script { 
                     echo "Executing pipeline for branch $BRANCH_NAME"
-                   //gv.deployApp()
+                    // gv.deployApp()
                 }
             }
         }
     }
 }
- 
