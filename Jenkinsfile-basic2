@@ -1,7 +1,9 @@
+@Library('jenkins-shared-library') _  // <-- This is essential
+
 pipeline {
     agent any
     tools {
-        maven 'maven_3.9.10'  // Name must match what you configured
+        maven 'maven_3.9.10'
     }
     stages {
         stage('Test Shared Lib') {
