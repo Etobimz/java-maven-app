@@ -10,7 +10,7 @@ pipeline {
     }
 
     stages {
-// stages
+// stagess
 
 
         stage("Init") {
