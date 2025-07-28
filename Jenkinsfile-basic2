@@ -13,6 +13,19 @@ pipeline {
 
     stages {
 
+           stage('increment version') {
+  steps {
+    script {
+      echo 'Incrementing app version...'
+      sh """
+        mvn build-helper:parse-version versions:set \
+          -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.nextMinorVersion}.\${parsedVersion.nextIncrementalVersion} \
+          versions:commit
+      """
+    }
+  }
+}
+
 
         stage("Init") {
             steps {
