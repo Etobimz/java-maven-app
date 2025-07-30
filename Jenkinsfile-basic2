@@ -34,6 +34,21 @@ pipeline {
 }
 
 
+
+        stage('build app') {
+            steps {
+                script {
+                    echo " cleaning app "
+sh ' mvn clean package '
+
+                    
+                } 
+            }
+        }
+
+
+
+
         stage("Init") {
             steps {
                 script {
