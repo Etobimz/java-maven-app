@@ -23,10 +23,6 @@ docker push \$DOCKER_USERNAME/java-maven-app:${env.IMAGE_NAME}
 
 }
 
-def cleanApp() {
-
-     echo "Deploying the application..."
-}
 
 
 def deployApp() {
