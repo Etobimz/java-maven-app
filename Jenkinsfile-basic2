@@ -17,11 +17,12 @@ pipeline {
   steps {
     script {
       echo 'Incrementing app version...'
-      sh """
-        mvn build-helper:parse-version versions:set \
-          -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.nextMinorVersion}.\${parsedVersion.nextIncrementalVersion} \
-          versions:commit
-      """
+      sh '''#!/bin/bash
+  mvn build-helper:parse-version versions:set \
+    -DnewVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.${parsedVersion.nextIncrementalVersion} \
+    versions:commit
+'''
+
 
       def pomText = readFile('pom.xml')
       def versionMatch = pomText =~ /<version>([\d\.]+)<\/version>/
