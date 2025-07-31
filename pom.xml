@@ -35,7 +35,7 @@
                 </configuration>
             </plugin>
 
-            <!-- ✅ Build helper plugin to parse the current version -->
+            <!-- Build helper plugin to parse the current version -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
@@ -50,7 +50,7 @@
                 </executions>
             </plugin>
 
-            <!-- ✅ Versions plugin to set the new version -->
+            <!-- Versions plugin to set the new version -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
