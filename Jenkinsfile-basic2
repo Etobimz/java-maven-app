@@ -17,9 +17,13 @@ pipeline {
   steps {
     script {
       echo 'Incrementing app version...'
-      sh '''#!/bin/bash
-  mvn build-helper:parse-version versions:set \
-    -DnewVersion=${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.${parsedVersion.nextIncrementalVersion} \
+    sh '''#!/bin/bash
+  mvn build-helper:parse-version \
+    -Dexec.executable=echo \
+    -Dexec.args='${parsedVersion.majorVersion}.${parsedVersion.nextMinorVersion}.0' \
+    build-helper:parse-version \
+    versions:set \
+    -DnewVersion=$(mvn help:evaluate -Dexpression=parsedVersion.nextMinorVersion -q -DforceStdout) \
     versions:commit
 '''
 
