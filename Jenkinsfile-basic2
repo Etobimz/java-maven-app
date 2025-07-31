@@ -6,124 +6,37 @@ pipeline {
     agent any
     tools { 
         maven 'maven_3.9.10'
-
     }
-
-
 
     stages {
-
-           stage('increment version') {
-  steps {
-    script {
-      echo 'Incrementing app version...'
-  sh '''#!/bin/bash
-  echo "Parsing version..."
-  mvn build-helper:parse-version
-
-  MAJOR=$(mvn help:evaluate -Dexpression=parsedVersion.majorVersion -q -DforceStdout)
-  MINOR=$(mvn help:evaluate -Dexpression=parsedVersion.minorVersion -q -DforceStdout)
-  PATCH=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
-
-  # 🔁 Optional: Check for qualifier and ignore it
-  QUALIFIER=$(mvn help:evaluate -Dexpression=parsedVersion.qualifier -q -DforceStdout)
-  echo "Found qualifier: $QUALIFIER"
-
-  NEW_PATCH=$((PATCH + 1))
-  NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
-
-  echo "Setting clean version: $NEW_VERSION"
-
-  mvn versions:set \
-      -DnewVersion=$NEW_VERSION \
-      -DgenerateBackupPoms=false \
-      -DremoveSnapshot=true \
-      -DprocessAllModules=true \
-      versions:commit
-
-  echo "Final version: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
-'''
-
-
-
-
-      def pomText = readFile('pom.xml')
-      def versionMatch = pomText =~ /<version>([\d\.]+)<\/version>/
-      def version = versionMatch[0][1]
-      env.IMAGE_NAME = "${version}-${env.BUILD_NUMBER}"
-      echo "Image name set to: ${env.IMAGE_NAME}"
-
-    }
-  }
-}
-
-
-
-        stage('build app') {
+        stage('increment version') {
             steps {
                 script {
-                    echo " cleaning app "
-sh ' mvn clean package '
+                    echo 'Incrementing app version...'
+                    sh '''#!/bin/bash
+                        echo "Parsing version..."
+                        mvn build-helper:parse-version
 
-                    
-                } 
-            }
-        }
+                        MAJOR=$(mvn help:evaluate -Dexpression=parsedVersion.majorVersion -q -DforceStdout)
+                        MINOR=$(mvn help:evaluate -Dexpression=parsedVersion.minorVersion -q -DforceStdout)
+                        PATCH=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
 
+                        # Check for qualifier to debug any unexpected suffixes
+                        QUALIFIER=$(mvn help:evaluate -Dexpression=parsedVersion.qualifier -q -DforceStdout || echo "")
+                        echo "Found qualifier: $QUALIFIER"
 
+                        NEW_PATCH=$((PATCH + 1))
+                        NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
 
+                        echo "Setting clean version: $NEW_VERSION"
 
-        stage("Init") {
-            steps {
-                script {
-                    gv = load "script.groovy"
-                    
-                } 
-            }
-        }
+                        mvn versions:set \
+                            -DnewVersion=$NEW_VERSION \
+                            -DgenerateBackupPoms=false \
+                            -DremoveSnapshot=true \
+                            -DprocessAllModules=true \
+                            versions:commit
 
-
-
-        stage('build jar') {
-            when { 
-                expression{
-                    BRANCH_NAME == 'jenkins-jobs'
-                }
-            }
-            steps {
-                script {
-                    echo "Executing pipeline for branch $BRANCH_NAME"
-                    gv.buildJar()
-                    
-                }
-            }
-        }
-
-
-
-        stage('build image') {
-            steps {
-                script {
-                    gv.buildImage()
-                }
-            
-            }
-        }
-
-
-        stage('deploy') {
-            when { 
-                expression{
-                    BRANCH_NAME == 'jenkins-jobs'
-                }
-            }
-            steps {
-                script { 
-                    echo "Executing pipeline for branch $BRANCH_NAME"
-                   gv.deployApp()
-                }
-            }
-        }
-    }
-}
- 
+                        echo "Final version in pom.xml: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+                        
+                       
