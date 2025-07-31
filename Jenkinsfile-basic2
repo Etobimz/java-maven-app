@@ -17,29 +17,33 @@ pipeline {
   steps {
     script {
       echo 'Incrementing app version...'
-   sh '''#!/bin/bash
-  echo "Parsing current version..."
-
-  # Step 1: Parse the current version using the build-helper plugin
+  sh '''#!/bin/bash
+  echo "Parsing version..."
   mvn build-helper:parse-version
 
-  # Step 2: Extract major, minor, and incremental parts
   MAJOR=$(mvn help:evaluate -Dexpression=parsedVersion.majorVersion -q -DforceStdout)
   MINOR=$(mvn help:evaluate -Dexpression=parsedVersion.minorVersion -q -DforceStdout)
-  INCREMENTAL=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
+  PATCH=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
 
-  # Step 3: Increment patch version
-  NEW_VERSION="$MAJOR.$MINOR.$((INCREMENTAL + 1))"
+  # 🔁 Optional: Check for qualifier and ignore it
+  QUALIFIER=$(mvn help:evaluate -Dexpression=parsedVersion.qualifier -q -DforceStdout)
+  echo "Found qualifier: $QUALIFIER"
 
-  echo "Setting new version: $NEW_VERSION"
+  NEW_PATCH=$((PATCH + 1))
+  NEW_VERSION="$MAJOR.$MINOR.$NEW_PATCH"
 
-  # Step 4: Set the new version and REMOVE any old suffix like -25, -SNAPSHOT, etc.
-  mvn versions:set -DnewVersion=$NEW_VERSION \
-                   -DremoveSnapshot=true \
-                   -DgenerateBackupPoms=false \
-                   -DprocessAllModules=true \
-                   versions:commit
+  echo "Setting clean version: $NEW_VERSION"
+
+  mvn versions:set \
+      -DnewVersion=$NEW_VERSION \
+      -DgenerateBackupPoms=false \
+      -DremoveSnapshot=true \
+      -DprocessAllModules=true \
+      versions:commit
+
+  echo "Final version: $(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
 '''
+
 
 
 
