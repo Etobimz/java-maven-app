@@ -110,10 +110,21 @@ sh ' mvn clean package '
                 }
             }
             steps {
-                script { 
-                    echo "Executing pipeline for branch $BRANCH_NAME"
-                   gv.deployApp()
-                }
+                 script { 
+            def remoteHost = 'bimjenk@13.58.16.113'
+            def dockerCmd = '''
+                docker rm -f java-test || true
+                docker run --name java-test -p 8080:8080 -d etobimz/java-test-maven:2.0
+            '''
+            sshagent(['bim-ec2-server-key']) { 
+                sh """
+                    ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
+                """
+            }
+
+            echo "Executing pipeline for branch $BRANCH_NAME"
+            gv.deployApp()
+        }
             }
         }
     }
