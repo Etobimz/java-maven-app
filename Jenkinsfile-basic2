@@ -1,41 +1,27 @@
 pipeline {
-    agent {
-        docker {
-            image 'maven:3.9.6-eclipse-temurin-17' // Or any other version you need
-            args '-v /root/.m2:/root/.m2'
-        }
-    }
+    agent any
 
     stages {
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean package'
             }
         }
-        stage('Version Bump') {
-            steps {
-                echo 'Skipping version bump for now...'
-            }
-        }
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t your-image-name .'
-            }
-        }
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-password', variable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u your-dockerhub-username --password-stdin
-                        docker push your-image-name
-                    '''
+
+        stage('Deploy') {
+            when {
+                expression {
+                    BRANCH_NAME == 'jenkins-jobs'
                 }
             }
-        }
-        stage('Deploy') {
             steps {
-                echo 'Triggering deployment...'
-                // Add your deployment logic here
+                script {
+                    def deployCmd = 'docker run -d -p 8080:8080 etobimz/java-test-maven:2.0'
+                    sshagent(['bim-ec2-server-key']) {
+                        sh "ssh -o StrictHostKeyChecking=no bimjenk@13.58.16.113 ${deployCmd}"
+                    }
+                    echo "Deployed to EC2 on branch ${BRANCH_NAME}"
+                }
             }
         }
     }
