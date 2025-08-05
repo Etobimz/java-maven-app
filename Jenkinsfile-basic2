@@ -1,121 +1,91 @@
-#!/usr/bin/env groovy
-
-def gv 
-
 pipeline {
     agent any
-    tools { 
-        maven 'maven_3.9.10'
 
+    tools {
+        maven 'maven_3.9.10'
     }
 
-
+    environment {
+        DOCKER_CREDENTIALS_ID = 'docker-hub-creds'
+        DOCKER_IMAGE_NAME = 'etobimz/java-test-maven'
+        DOCKER_TAG = ''
+    }
 
     stages {
-
-           stage('increment version') {
-  steps {
-    script {
-      echo 'Incrementing app version...'
-   sh '''#!/bin/bash
-  echo "Parsing current version..."
-
-  # Parse the current version using the build-helper plugin
-  mvn build-helper:parse-version
-
-  # Get the parsed version components
-  MAJOR=$(mvn help:evaluate -Dexpression=parsedVersion.majorVersion -q -DforceStdout)
-  MINOR=$(mvn help:evaluate -Dexpression=parsedVersion.minorVersion -q -DforceStdout)
-  INCREMENTAL=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
-
-  # Optionally increment part of the version (e.g. bump patch)
-  NEW_VERSION="$MAJOR.$MINOR.$((INCREMENTAL + 1))"
-
-  echo "Setting new version: $NEW_VERSION"
-
-  # Set new version
-  mvn versions:set -DnewVersion=$NEW_VERSION versions:commit
-'''
-
-
-
-      def pomText = readFile('pom.xml')
-      def versionMatch = pomText =~ /<version>([\d\.]+)<\/version>/
-      def version = versionMatch[0][1]
-      env.IMAGE_NAME = "${version}-${env.BUILD_NUMBER}"
-      echo "Image name set to: ${env.IMAGE_NAME}"
-
-    }
-  }
-}
-
-
-
-        stage('build app') {
+        stage('Increment Version') {
             steps {
                 script {
-                    echo " cleaning app "
-sh ' mvn clean package '
+                    sh '''
+                        echo "Parsing current version..."
+                        mvn build-helper:parse-version
+                        MAJOR=$(mvn help:evaluate -Dexpression=parsedVersion.majorVersion -q -DforceStdout)
+                        MINOR=$(mvn help:evaluate -Dexpression=parsedVersion.minorVersion -q -DforceStdout)
+                        INCREMENTAL=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
+                        NEW_VERSION="$MAJOR.$MINOR.$((INCREMENTAL + 1))"
+                        echo "Setting new version: $NEW_VERSION"
+                        mvn versions:set -DnewVersion=$NEW_VERSION versions:commit
+                    '''
 
-                    
-                } 
-            }
-        }
-
-
-
-
-        stage("Init") {
-            steps {
-                script {
-                    gv = load "script.groovy"
-                    
-                } 
-            }
-        }
-
-
-
-        stage('build jar') {
-            when { 
-                expression{
-                    BRANCH_NAME == 'jenkins-jobs'
-                }
-            }
-            steps {
-                script {
-                    echo "Executing pipeline for branch $BRANCH_NAME"
-                    gv.buildJar()
-                    
+                    // Read new version from pom.xml
+                    def pomText = readFile('pom.xml')
+                    def versionMatch = pomText =~ /<version>([\d\.]+)<\/version>/
+                    def version = versionMatch[0][1]
+                    env.DOCKER_TAG = "${version}-${env.BUILD_NUMBER}"
+                    echo "Docker tag will be: ${env.DOCKER_TAG}"
                 }
             }
         }
 
-
-
-        stage('build image') {
+        stage('Build JAR') {
             steps {
-                script {
-                    gv.buildImage()
-                }
-            
+                sh 'mvn clean package -DskipTests'
             }
         }
 
-
-        stage('deploy') {
-            when { 
-                expression{
-                    BRANCH_NAME == 'jenkins-jobs'
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
                 }
             }
+        }
+
+        stage('Push Docker Image') {
             steps {
-                script { 
-                    echo "Executing pipeline for branch $BRANCH_NAME"
-                   gv.deployApp()
+                withCredentials([usernamePassword(
+                    credentialsId: "${DOCKER_CREDENTIALS_ID}",
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy') {
+            when {
+                expression { env.BRANCH_NAME == 'jenkins-jobs' }
+            }
+            steps {
+                script {
+                    def remoteHost = 'bimjenk@13.58.16.113'
+                    def fullImage = "${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
+                    def dockerCmd = """
+                        docker rm -f java-test || true
+                        docker pull ${fullImage}
+                        docker run --name java-test -p 8080:8080 -d ${fullImage}
+                    """
+
+                    sshagent(['bim-ec2-server-key']) {
+                        sh """
+                            ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
+                        """
+                    }
                 }
             }
         }
     }
 }
- 
