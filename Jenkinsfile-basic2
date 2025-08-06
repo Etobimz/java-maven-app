@@ -1,20 +1,22 @@
 pipeline {
     agent any
 
+    tools {
+        maven 'Maven 3.9.6' // This must match the name you gave in step 3
+    }
+
     environment {
         DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
         IMAGE_NAME = 'etobimz/java-test-maven'
-        VERSION = '2.0' // manually specify or update as needed
+        VERSION = '2.0'
     }
 
     stages {
-
-stage('Test Credentials') {
-    steps {
-        echo "Docker username is: ${DOCKER_HUB_CREDENTIALS_USR}"
-    }
-}
-
+        stage('Test Credentials') {
+            steps {
+                echo "Docker username is: ${DOCKER_HUB_CREDENTIALS_USR}"
+            }
+        }
 
         stage('Build JAR') {
             steps {
