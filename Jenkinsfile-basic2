@@ -52,7 +52,7 @@ pipeline {
             def dockerCmd = '''
                 docker rm -f java-test || true
                 docker pull etobimz/java-test-maven:2.0
-                docker run --name java-test -p 8080:8080 -d etobimz/java-test-maven:2.0
+                docker run --name java-test -p 8070:8080 -d etobimz/java-test-maven:2.0
             '''
             sshagent(['bim-ec2-server-key']) {
                 sh """
