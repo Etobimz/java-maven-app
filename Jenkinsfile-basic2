@@ -42,28 +42,25 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
-            when {
-                expression {
-                    return env.BRANCH_NAME == 'jenkins-jobs'
-                }
-            }
-            steps {
-                script {
-                    def remoteHost = 'bimjenk@13.58.16.113'
-                    def dockerCmd = """
-                        docker rm -f java-test || true
-                        docker run --name java-test -p 8080:8080 -d $IMAGE_NAME:${VERSION}
-                    """
-                    sshagent(['bim-ec2-server-key']) {
-                        sh """
-                            ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
-                        """
-                    }
-
-                    echo "Deployed to EC2 from branch $BRANCH_NAME"
-                }
+       stage('Deploy') {
+    when { 
+        expression { BRANCH_NAME == 'jenkins-jobs' }
+    }
+    steps {
+        script {
+            def remoteHost = 'bimjenk@13.58.16.113'
+            def dockerCmd = '''
+                docker rm -f java-test || true
+                docker pull etobimz/java-test-maven:2.0
+                docker run --name java-test -p 8080:8080 -d etobimz/java-test-maven:2.0
+            '''
+            sshagent(['Bim2']) {
+                sh """
+                    ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
+                """
             }
         }
+    }
+}
     }
 }
