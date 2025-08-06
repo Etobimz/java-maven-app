@@ -49,12 +49,13 @@ pipeline {
     steps {
         script {
             def remoteHost = 'bimjenk@13.58.16.113'
-           def dockerComposeCmd = " docker-compose -f docker-compose.yaml up --detach "
-            sshagent(['bim-ec2-server-key']) {
-                sh """
-                    scp docker-compose.yaml ${remoteHost}:/home/bimjenk
-                    ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerComposeCmd}'
-                """
+    def dockerComposeCmd = "cd /home/bimjenk && docker-compose build && docker-compose up -d"
+
+    sshagent(['bim-ec2-server-key']) {
+        sh """
+            scp docker-compose.yaml Dockerfile ${remoteHost}:/home/bimjenk
+            ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerComposeCmd}'
+        """
             }
         }
     }
