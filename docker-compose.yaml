@@ -3,7 +3,7 @@ services:
   java-maven-app:
     image:   etobimz/java-test-maven:2.0
     ports:
-      - 8070:8080
+      - 8077:8080
   postgres:
     image:   postgres:13
     ports:
