@@ -49,14 +49,11 @@ pipeline {
     steps {
         script {
             def remoteHost = 'bimjenk@13.58.16.113'
-            def dockerCmd = '''
-                docker rm -f java-test || true
-                docker pull etobimz/java-test-maven:2.0
-                docker run --name java-test -p 8070:8080 -d etobimz/java-test-maven:2.0
-            '''
+           def dockerComposeCmd = " docker-compose -f docker-compose.yaml up --detach "
             sshagent(['bim-ec2-server-key']) {
                 sh """
-                    ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
+                    scp docker-compose.yaml ${remoteHost}:/home/bimjenk
+                    ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerComposeCmd}'
                 """
             }
         }
