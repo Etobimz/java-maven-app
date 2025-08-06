@@ -54,7 +54,7 @@ pipeline {
                 docker pull etobimz/java-test-maven:2.0
                 docker run --name java-test -p 8080:8080 -d etobimz/java-test-maven:2.0
             '''
-            sshagent(['Bim2']) {
+            sshagent(['bim-ec2-server-key']) {
                 sh """
                     ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
                 """
