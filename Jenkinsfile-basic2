@@ -1,89 +1,58 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'maven_3.9.10'
-    }
-
     environment {
-        DOCKER_CREDENTIALS_ID = 'docker-hub-creds'
-        DOCKER_IMAGE_NAME = 'etobimz/java-test-maven'
-        DOCKER_TAG = ''
+        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
+        IMAGE_NAME = 'etobimz/java-test-maven'
+        VERSION = '2.0' // manually specify or update as needed
     }
 
     stages {
-        stage('Increment Version') {
-            steps {
-                script {
-                    sh '''
-                        echo "Parsing current version..."
-                        mvn build-helper:parse-version
-                        MAJOR=$(mvn help:evaluate -Dexpression=parsedVersion.majorVersion -q -DforceStdout)
-                        MINOR=$(mvn help:evaluate -Dexpression=parsedVersion.minorVersion -q -DforceStdout)
-                        INCREMENTAL=$(mvn help:evaluate -Dexpression=parsedVersion.incrementalVersion -q -DforceStdout)
-                        NEW_VERSION="$MAJOR.$MINOR.$((INCREMENTAL + 1))"
-                        echo "Setting new version: $NEW_VERSION"
-                        mvn versions:set -DnewVersion=$NEW_VERSION versions:commit
-                    '''
-
-                    // Read new version from pom.xml
-                    def pomText = readFile('pom.xml')
-                    def versionMatch = pomText =~ /<version>([\d\.]+)<\/version>/
-                    def version = versionMatch[0][1]
-                    env.DOCKER_TAG = "${version}-${env.BUILD_NUMBER}"
-                    echo "Docker tag will be: ${env.DOCKER_TAG}"
-                }
-            }
-        }
 
         stage('Build JAR') {
             steps {
+                echo 'Building the JAR...'
                 sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} ."
-                }
+                echo 'Building Docker Image...'
+                sh "docker build -t $IMAGE_NAME:${VERSION} ."
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: "${DOCKER_CREDENTIALS_ID}",
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push ${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
-                    '''
-                }
+                echo 'Pushing Docker Image to Docker Hub...'
+                sh """
+                    echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin
+                    docker push $IMAGE_NAME:${VERSION}
+                """
             }
         }
 
         stage('Deploy') {
             when {
-                expression { env.BRANCH_NAME == 'jenkins-jobs' }
+                expression {
+                    return env.BRANCH_NAME == 'jenkins-jobs'
+                }
             }
             steps {
                 script {
                     def remoteHost = 'bimjenk@13.58.16.113'
-                    def fullImage = "${DOCKER_IMAGE_NAME}:${DOCKER_TAG}"
                     def dockerCmd = """
                         docker rm -f java-test || true
-                        docker pull ${fullImage}
-                        docker run --name java-test -p 8080:8080 -d ${fullImage}
+                        docker run --name java-test -p 8080:8080 -d $IMAGE_NAME:${VERSION}
                     """
-
                     sshagent(['bim-ec2-server-key']) {
                         sh """
                             ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerCmd}'
                         """
                     }
+
+                    echo "Deployed to EC2 from branch $BRANCH_NAME"
                 }
             }
         }
