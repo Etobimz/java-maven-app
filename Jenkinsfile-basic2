@@ -49,7 +49,7 @@ pipeline {
     steps {
         script {
             def remoteHost = 'bimjenk@13.58.16.113'
-    def dockerComposeCmd = "cd /home/bimjenk && docker-compose build && docker-compose up -d"
+    def dockerComposeCmd = "docker pull etobimz/java-test-maven:2.0 && docker-compose up -d"
 
     sshagent(['bim-ec2-server-key']) {
         sh """
