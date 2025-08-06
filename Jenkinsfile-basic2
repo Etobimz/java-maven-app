@@ -9,6 +9,13 @@ pipeline {
 
     stages {
 
+stage('Test Credentials') {
+    steps {
+        echo "Docker username is: ${DOCKER_HUB_CREDENTIALS_USR}"
+    }
+}
+
+
         stage('Build JAR') {
             steps {
                 echo 'Building the JAR...'
