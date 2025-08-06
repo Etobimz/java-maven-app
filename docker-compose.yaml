@@ -1,15 +1,15 @@
 version: '3.8'
 services:
   java-maven-app:
-    image:   etobimz/java-test-maven:2.0
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - 8077:8080
+
   postgres:
-    image:   postgres:13
+    image: postgres:13
     ports:
       - 5432:5432
     environment:
       - POSTGRES_PASSWORD=password
-
-      #- MONGO_INITDB_ROOT_PASSWORD=password
-
