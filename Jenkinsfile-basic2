@@ -1,10 +1,17 @@
 pipeline {
     agent any
 
+tools {
+    maven 'Maven 3.9.6'
+}
+
+
     environment {
         DOCKER_HUB_REPO = 'etobimz/java-test-maven'
         DOCKER_HUB_CREDENTIALS = 'dockerhub-credentials' // Jenkins creds ID
     }
+
+
 
     stages {
         stage('Checkout') {
