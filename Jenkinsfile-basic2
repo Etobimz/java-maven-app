@@ -16,7 +16,7 @@ pipeline {
 
         stage('Build Maven Project') {
             tools {
-                maven 'maven-3.9.6' // Must match the Maven name in Jenkins Global Tool Config
+                maven 'Maven 3.9.6' // Must match the Maven name in Jenkins Global Tool Config
             }
             steps {
                 sh 'mvn clean package -DskipTests'
