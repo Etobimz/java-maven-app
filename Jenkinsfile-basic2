@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+tools {
+        maven 'Maven 3.9.6'
+    }
+
     environment {
         DOCKER_HUB_USER = 'your-dockerhub-username'
         DOCKER_HUB_PASS = 'your-dockerhub-password'
