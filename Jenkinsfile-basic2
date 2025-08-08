@@ -1,17 +1,12 @@
 pipeline {
     agent any
 
-tools {
-    maven 'Maven 3.9.6'
-}
-
-
     environment {
-        DOCKER_HUB_REPO = 'etobimz/java-test-maven'
-        DOCKER_HUB_CREDENTIALS = 'dockerhub-credentials' // Jenkins creds ID
+        DOCKER_HUB_USER = 'your-dockerhub-username'
+        DOCKER_HUB_PASS = 'your-dockerhub-password'
+        IMAGE_NAME = 'etobimz/java-test-maven'
+        IMAGE_TAG = '2.0'
     }
-
-
 
     stages {
         stage('Checkout') {
@@ -20,35 +15,26 @@ tools {
             }
         }
 
-        stage('Build with Maven') {
+        stage('Build Maven Project') {
             steps {
-                sh 'mvn clean package -DskipTests'
+                sh 'mvn clean install -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    sh "docker build -t ${DOCKER_HUB_REPO}:${BUILD_NUMBER} ."
-                }
+                sh """
+                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                """
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Push Docker Image') {
             steps {
-                script {
-                    docker.withRegistry('', DOCKER_HUB_CREDENTIALS) {
-                        sh "docker push ${DOCKER_HUB_REPO}:${BUILD_NUMBER}"
-                    }
-                }
-            }
-        }
-
-        stage('Update docker-compose.yaml') {
-            steps {
-                script {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     sh """
-                    sed -i 's|${DOCKER_HUB_REPO}:.*|${DOCKER_HUB_REPO}:${BUILD_NUMBER}|' docker-compose.yaml
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                        docker push $IMAGE_NAME:$IMAGE_TAG
                     """
                 }
             }
@@ -56,18 +42,17 @@ tools {
 
         stage('Deploy with Docker Compose') {
             steps {
-                sh 'docker-compose down'
-                sh 'docker-compose up -d'
+                sh """
+                    docker-compose down
+                    docker-compose up -d
+                """
             }
         }
     }
 
     post {
-        success {
-            echo "Deployment completed successfully!"
-        }
-        failure {
-            echo "Pipeline failed. Check logs for errors."
+        always {
+            sh 'docker logout'
         }
     }
 }
