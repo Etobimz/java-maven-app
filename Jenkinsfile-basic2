@@ -1,64 +1,66 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'Maven 3.9.6' // This must match the name you gave in step 3
-    }
-
     environment {
-        DOCKER_HUB_CREDENTIALS = credentials('docker-hub-credentials')
-        IMAGE_NAME = 'etobimz/java-test-maven'
-        VERSION = '2.0'
+        DOCKER_HUB_REPO = 'etobimz/java-test-maven'
+        DOCKER_HUB_CREDENTIALS = 'dockerhub-credentials' // Jenkins creds ID
     }
 
     stages {
-        stage('Test Credentials') {
+        stage('Checkout') {
             steps {
-                echo "Docker username is: ${DOCKER_HUB_CREDENTIALS_USR}"
+                checkout scm
             }
         }
 
-        stage('Build JAR') {
+        stage('Build with Maven') {
             steps {
-                echo 'Building the JAR...'
                 sh 'mvn clean package -DskipTests'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker Image...'
-                sh "docker build -t $IMAGE_NAME:${VERSION} ."
+                script {
+                    sh "docker build -t ${DOCKER_HUB_REPO}:${BUILD_NUMBER} ."
+                }
             }
         }
 
-        stage('Push Docker Image') {
+        stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing Docker Image to Docker Hub...'
-                sh """
-                    echo $DOCKER_HUB_CREDENTIALS_PSW | docker login -u $DOCKER_HUB_CREDENTIALS_USR --password-stdin
-                    docker push $IMAGE_NAME:${VERSION}
-                """
+                script {
+                    docker.withRegistry('', DOCKER_HUB_CREDENTIALS) {
+                        sh "docker push ${DOCKER_HUB_REPO}:${BUILD_NUMBER}"
+                    }
+                }
             }
         }
 
-       stage('Deploy') {
-    when { 
-        expression { BRANCH_NAME == 'jenkins-jobs' }
-    }
-    steps {
-        script {
-            def remoteHost = 'bimjenk@13.58.16.113'
-    def dockerComposeCmd = "docker pull etobimz/java-test-maven:2.0 && docker-compose up -d"
+        stage('Update docker-compose.yaml') {
+            steps {
+                script {
+                    sh """
+                    sed -i 's|${DOCKER_HUB_REPO}:.*|${DOCKER_HUB_REPO}:${BUILD_NUMBER}|' docker-compose.yaml
+                    """
+                }
+            }
+        }
 
-    sshagent(['bim-ec2-server-key']) {
-        sh """
-            scp docker-compose.yaml Dockerfile ${remoteHost}:/home/bimjenk
-            ssh -o StrictHostKeyChecking=no ${remoteHost} '${dockerComposeCmd}'
-        """
+        stage('Deploy with Docker Compose') {
+            steps {
+                sh 'docker-compose down'
+                sh 'docker-compose up -d'
             }
         }
     }
-}
+
+    post {
+        success {
+            echo "Deployment completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed. Check logs for errors."
+        }
     }
 }
