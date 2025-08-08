@@ -4,7 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "your-dockerhub-username/java-maven-app"
         VERSION = "1.0.${BUILD_NUMBER}"
-        DOCKERHUB_CREDENTIALS = credentials('docker-gub-maven-rep') // Add in Jenkins > Manage Credentials
+        DOCKERHUB_CREDENTIALS = credentials('docker-hub-credentials') // Add in Jenkins > Manage Credentials
     }
 
     stages {
