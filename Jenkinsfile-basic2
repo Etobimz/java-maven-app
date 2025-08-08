@@ -5,50 +5,43 @@ tools {
         maven 'Maven 3.9.6'
     }
 
-    environment {
-        DOCKER_HUB_USER = 'your-dockerhub-username'
-        DOCKER_HUB_PASS = 'your-dockerhub-password'
-        IMAGE_NAME = 'etobimz/java-test-maven'
-        IMAGE_TAG = '2.0'
+   environment {
+        DOCKER_HUB_USER = credentials('docker-hub-user') // Jenkins credentials ID
+        DOCKER_HUB_PASS = credentials('docker-hub-pass') // Jenkins credentials ID
     }
 
     stages {
         stage('Checkout') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/your/repo.git'
             }
         }
 
-        stage('Build Maven Project') {
+        stage('Start Services') {
             steps {
-                sh 'mvn clean install -DskipTests'
+                sh 'docker-compose up -d'
+            }
+        }
+
+        stage('Build with Maven') {
+            steps {
+                sh 'docker-compose exec -T java-maven-app mvn clean package'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 sh """
-                    docker build -t $IMAGE_NAME:$IMAGE_TAG .
+                    docker build -t ${DOCKER_HUB_USER}/java-test-maven:latest .
                 """
             }
         }
 
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push $IMAGE_NAME:$IMAGE_TAG
-                    """
-                }
-            }
-        }
-
-        stage('Deploy with Docker Compose') {
+        stage('Push to Docker Hub') {
             steps {
                 sh """
-                    docker-compose down
-                    docker-compose up -d
+                    echo ${DOCKER_HUB_PASS} | docker login -u ${DOCKER_HUB_USER} --password-stdin
+                    docker push ${DOCKER_HUB_USER}/java-test-maven:latest
                 """
             }
         }
@@ -56,7 +49,7 @@ tools {
 
     post {
         always {
-            sh 'docker logout'
+            sh 'docker-compose down'
         }
     }
 }
