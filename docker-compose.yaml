@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   java-maven-app:
-    image: etobimz/java-test-maven:2.0
+    image: ${IMAGE_NAME}:${VERSION}
     ports:
       - 8077:8080
 
