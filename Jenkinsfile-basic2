@@ -2,26 +2,21 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "your-dockerhub-username/java-maven-app"
+        IMAGE_NAME = "etobimz/java-maven-app"
         VERSION = "1.0.${BUILD_NUMBER}"
-        // GitHub token stored as "github-pat22" in Jenkins credentials (Username: GitHub username, Password: PAT)
-        GITHUB_CREDENTIALS = credentials('github-pat22')
-        // DockerHub credentials (Username & Password)
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds')
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') // Correct ID for DockerHub credentials
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/your-username/your-repo.git',
-                    credentialsId: 'github-pat22'
+                git branch: 'jenkins-jobs', url: 'https://github.com/Etobimz/java-maven-app.git'
             }
         }
 
         stage('Build Maven Project') {
             tools {
-                maven 'Maven 3.9.6' // Must match the Maven name in Jenkins Global Tool Config
+                maven 'Maven 3.9.6'
             }
             steps {
                 sh 'mvn clean package -DskipTests'
@@ -53,11 +48,8 @@ pipeline {
     }
 
     post {
-        success {
-            echo " Build & Deployment completed successfully!"
-        }
         failure {
-            echo "Build or Deployment failed."
+            echo 'Build or Deployment failed.'
         }
     }
 }
