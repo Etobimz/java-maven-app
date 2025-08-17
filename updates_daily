@@ -14,3 +14,4 @@ k8s
 architecture k8s
 kubectl and minicub installation
 kubectl commands
+yaml config files
