@@ -35,3 +35,18 @@ spec:
             configMapKeyRef:
               name: mongodb-config
               key: database_url
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongoexpress-service
+spec:
+  selector:
+    app: mongoexpress # Matches the Deployment's label
+  type: LoadBalancer
+  ports:
+    - protocol: TCP
+      port: 8081        # External port
+      targetPort: 8081  # Container port
+      nodePort: 30000   # Optional, can be omitted
