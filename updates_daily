@@ -16,3 +16,4 @@ kubectl and minicub installation
 kubectl commands
 yaml config files
 Namespaces k8s
+ingress. k8s Service types
