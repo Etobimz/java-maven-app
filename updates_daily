@@ -19,3 +19,4 @@ Namespaces k8s
 ingress. k8s Service types
 ing
 perssiting data with volumes
+Statefulset{apps}
