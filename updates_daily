@@ -20,3 +20,4 @@ ingress. k8s Service types
 ing
 perssiting data with volumes
 Statefulset{apps}
+error with helmchart for mongodb
